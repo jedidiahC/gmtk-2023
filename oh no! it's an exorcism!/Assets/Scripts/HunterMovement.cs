@@ -21,14 +21,17 @@ public class HunterMovement : MonoBehaviour
         }
 
         this.target = target;
+
         hasTarget = true;
         hasTargetPos = false;
     }
 
     public void GoToTargetPos(Vector3 targetPos) 
     {
-        hasTarget = true;
-        hasTargetPos = false;
+        hasTarget = false;
+        hasTargetPos = true;
+
+        this.target = null;
 
         // Inform navmesh agent.
         agent.SetDestination(targetPos);
@@ -42,5 +45,12 @@ public class HunterMovement : MonoBehaviour
 
         // Inform navmesh agent.
         agent.SetDestination(this.transform.position);
+    }
+
+    private void Update()
+    {
+        if (hasTarget) {
+            agent.SetDestination(target.position);
+        }
     }
 }

@@ -10,10 +10,19 @@ public class HunterLogic : MonoBehaviour
 
     [SerializeField] private List<Trap> traps = null;
     [SerializeField] private Room assignedRoom = null;
+    
+    [Header("Exploration")]
     [SerializeField] private float exploreTime = 5.0f;
     [SerializeField] private float exploreTimer = 0.0f;
+
+    [Header("Escort")]
+    [SerializeField] private HunterLogic leader = null;
+
+    [Header("Fear")]
     [SerializeField] private int maxFear = 100;
     [SerializeField] private int currentFear = 0;
+
+    [Header("References")]
     [SerializeField] private HunterMovement movement = null;
     [SerializeField] private HunterState currentState = HunterState.Begin;
 
@@ -41,7 +50,6 @@ public class HunterLogic : MonoBehaviour
                 break;
 
             case HunterState.Exploring:
-
                 Explore();
                 break;
 
@@ -95,7 +103,12 @@ public class HunterLogic : MonoBehaviour
 
     private void Escort() 
     {
-
+        if (leader != null) {
+            movement.GoToTarget(leader.transform);
+            if (leader.CurrentState != HunterState.Exploring) {
+                leader = null;
+            }
+        }        
     }
 
     private void Investigate() 
@@ -117,21 +130,29 @@ public class HunterLogic : MonoBehaviour
         if (currentState == HunterState.Begin) {
             EnterState(HunterState.Idling);
         } else if (currentState == HunterState.Idling) {
-
             if (assignedRoom != null) {
                 if (!assignedRoom.IsExplored) {
                     EnterState(HunterState.Exploring);
                 } else {
                     EnterState(HunterState.Investigating);
                 }
+            } else {
+                leader = director.FindHunterInState(HunterState.Exploring);
+                if (leader != null) {
+                    EnterState(HunterState.Escort);
+                }
             }
-
         } else if (currentState == HunterState.Exploring) {
 
             if (assignedRoom == null) {
                 EnterState(HunterState.Idling);
             }
 
+        } else if (currentState == HunterState.Escort) {
+            
+            if (leader == null) {
+                EnterState(HunterState.Idling);
+            }
         }
     }
 
@@ -140,6 +161,10 @@ public class HunterLogic : MonoBehaviour
         switch(currentState) {
             case HunterState.ActivatingBreaker:
                 breaker = null;
+                break;
+            case HunterState.Escort:
+                movement.Stop();
+                leader = null;
                 break;
             default:
                 break;
