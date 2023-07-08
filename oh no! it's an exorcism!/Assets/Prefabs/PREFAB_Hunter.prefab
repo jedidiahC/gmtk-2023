@@ -53,7 +53,7 @@ MonoBehaviour:
       m_Calls: []
   traps: []
   assignedRoom: {fileID: 0}
-  exploreTime: 10
+  exploreTime: 2
   exploreTimer: 0
   maxFear: 100
   currentFear: 0

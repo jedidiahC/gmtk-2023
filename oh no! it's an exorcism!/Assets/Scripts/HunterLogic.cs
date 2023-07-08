@@ -39,15 +39,20 @@ public class HunterLogic : MonoBehaviour
             case HunterState.Idling:
                 Idling();
                 break;
+
             case HunterState.Exploring:
+
                 Explore();
                 break;
+
+            case HunterState.Escort:
+                Escort();
+                break;
+
             case HunterState.Investigating:
                 Investigate();
                 break;
-            case HunterState.CollectingEvidence:
-                CollectEvidence();
-                break;
+
             case HunterState.ActivatingBreaker:
                 ActivatingBreaker();
                 break;
@@ -62,7 +67,6 @@ public class HunterLogic : MonoBehaviour
         assignedRoom = director.AssignNextRoomToExplore();
         if (assignedRoom != null) {
             movement.GoToTargetPos(assignedRoom.GetDestinationPos());
-            EnterState(HunterState.Exploring);
         }
 
         LogHunter("is idling");
@@ -70,8 +74,8 @@ public class HunterLogic : MonoBehaviour
 
     private void Explore() 
     {
+        // In room.
         if (assignedRoom.IsInRoom(this.transform)) {
-            movement.GoToTargetPos(assignedRoom.GetDestinationPos());
             exploreTimer += Time.deltaTime;
 
             if (exploreTimer >= exploreTime) {
@@ -82,20 +86,25 @@ public class HunterLogic : MonoBehaviour
                 assignedRoom.MarkExplored();
                 assignedRoom = null;
             }
+        } else {
+            movement.GoToTargetPos(assignedRoom.GetDestinationPos());
         }
 
         LogHunter("is exploring");
     }
 
-    private void Investigate() 
+    private void Escort() 
     {
 
-        LogHunter("is investigating");
     }
 
-    private void CollectEvidence() 
+    private void Investigate() 
     {
-        LogHunter("is collecting evidence");
+        if (assignedRoom == null) {
+            EnterState(HunterState.Idling);
+        }
+
+        LogHunter("is investigating");
     }
 
     private void ActivatingBreaker() 
@@ -110,7 +119,11 @@ public class HunterLogic : MonoBehaviour
         } else if (currentState == HunterState.Idling) {
 
             if (assignedRoom != null) {
-                EnterState(HunterState.Exploring);
+                if (!assignedRoom.IsExplored) {
+                    EnterState(HunterState.Exploring);
+                } else {
+                    EnterState(HunterState.Investigating);
+                }
             }
 
         } else if (currentState == HunterState.Exploring) {
@@ -155,7 +168,7 @@ public class HunterLogic : MonoBehaviour
         LogHunter($"entering {state}");
     }
 
-    private void Init() 
+    public void Init() 
     {
 
     }
@@ -167,5 +180,5 @@ public class HunterLogic : MonoBehaviour
 }
 
 public enum HunterState {
-    Begin, Idling, Escort, Exploring, ExaminingClue, Investigating, CollectingEvidence, ActivatingBreaker
+    Begin, Idling, Escort, Exploring, ExaminingClue, Investigating, ActivatingBreaker
 }

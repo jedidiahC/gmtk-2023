@@ -40,6 +40,7 @@ public class Room : MonoBehaviour
             return;
         }
 
+        Gizmos.color = isExplored ? Color.green : Color.red;
         foreach (var room in adjacentRooms) {
             if (room != null) {
                 Gizmos.DrawLine(GetDestinationPos(), room.GetDestinationPos());

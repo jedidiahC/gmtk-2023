@@ -25,8 +25,18 @@ public class HunterDirector : MonoBehaviour
         QueueRoom(level.StartingRoom);
     }
 
+    public HunterLogic FindHunterInState(HunterState state) {
+        foreach (var hunter in hunters) {
+            if (hunter.CurrentState == state) {
+                return hunter;
+            }
+        }
+
+        return null;
+    }
+
     public void QueueRoom(Room room) {
-        if (!room.IsExplored && !roomsToExplore.Contains(room)) {
+        if (room != null && !room.IsExplored && !roomsToExplore.Contains(room)) {
             roomsToExplore.Enqueue(room);
         }
     }
