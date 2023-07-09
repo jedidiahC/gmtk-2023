@@ -29,6 +29,8 @@ public class HunterDirector : MonoBehaviour
     [SerializeField] private Room assignedBreakerRoom = null;
     [SerializeField] private HunterLogic assignedHunterToBreakerRoom = null;
 
+    public PlayerMovement player = null;
+
     public HuntDirective Directive { get { return currentDirective; }}
     public Room MeetingRoom { get { return meetingRoom; } }
 

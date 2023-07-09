@@ -26,8 +26,17 @@ public class HunterLogic : MonoBehaviour
     [SerializeField] private HunterLogic leader = null;
 
     [Header("Fear")]
+    public float viewRadius = 2;
+    public float viewAngle = 45;
+    public float maxJumpScareDist = 0.7f;
+    public LayerMask targetMask;
+
     [SerializeField] private float maxFear = 100;
     [SerializeField] private float currentFear = 0;
+    [SerializeField] private float fearRateWhileJumpscare = 2;
+    [SerializeField] private float jumpscareTime = 10.0f;
+    [SerializeField] private float jumpscareTimer = 0;
+
     [SerializeField] private Spook spook = null;
 
     [Header("References")]
@@ -49,6 +58,11 @@ public class HunterLogic : MonoBehaviour
 
     public void Spook(Spook spook)
     {
+        if (this.spook != null)
+        {
+            return;
+        }
+
         this.spook = spook;
         currentFear = Mathf.Min(maxFear, currentFear + spook.ScaryPoints);
     }
@@ -66,6 +80,25 @@ public class HunterLogic : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Check jumpscare.
+        if (currentState != HunterState.Jumpscare && currentState != HunterState.Shock)
+        {
+            Transform target = director.player.transform;
+            Vector3 dirToTarget = (target.position - transform.position).normalized;
+
+
+            if (Vector3.Angle(transform.forward, dirToTarget) < viewAngle / 2)
+            {
+                if (Vector3.Distance(transform.position, target.position) < maxJumpScareDist && director.player.isVisible)
+                {
+                    jumpscareTimer = jumpscareTime;
+                    LogAction("just got jumpscared!");
+                    return;
+                }
+            }
+        }
+        
+
         switch (currentState)
         {
             case HunterState.Idling:
@@ -98,6 +131,10 @@ public class HunterLogic : MonoBehaviour
 
             case HunterState.InvestigatingSpook:
                 InvestigatingSpook();
+                break;
+            
+            case HunterState.Jumpscare:
+                Jumpscare();
                 break;
         }
 
@@ -319,6 +356,17 @@ public class HunterLogic : MonoBehaviour
         }
     }
 
+    private void Jumpscare()
+    {
+        jumpscareTimer -= Time.deltaTime;
+        currentFear = Mathf.Min(maxFear, currentFear + Time.deltaTime * fearRateWhileJumpscare);
+        movement.Stop();
+        if (jumpscareTimer < 0)
+        {
+            jumpscareTimer = 0;
+        }
+    }
+
     // Handle state transitions.
     private void PostUpdateCheck()
     {
@@ -326,6 +374,12 @@ public class HunterLogic : MonoBehaviour
         if (currentFear == maxFear)
         {
             EnterState(HunterState.Shock);
+            return;
+        }
+
+        if (currentState != HunterState.Jumpscare && jumpscareTimer > 0) 
+        {
+            EnterState(HunterState.Jumpscare);
             return;
         }
 
@@ -427,6 +481,13 @@ public class HunterLogic : MonoBehaviour
         else if (currentState == HunterState.ActivatingBreaker)
         {
             if (breakerRoom == null)
+            {
+                EnterState(HunterState.Idling);
+            }
+        }
+        else if (currentState == HunterState.Jumpscare)
+        {
+            if (jumpscareTimer == 0)
             {
                 EnterState(HunterState.Idling);
             }
