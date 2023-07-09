@@ -7,7 +7,7 @@ using UnityEngine.PlayerLoop;
 
 public class HunterRender : MonoBehaviour
 {
-    private SpriteRenderer sr;
+    [SerializeField] SpriteRenderer sr;
     private NavMeshAgent agent;
     private Animator animator;
 
@@ -15,7 +15,6 @@ public class HunterRender : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
-        sr = GetComponent<SpriteRenderer>();
     }
 
     private void Update() 
