@@ -16,7 +16,7 @@ public class HunterDebugUI : MonoBehaviour
 
     private void OnDrawGizmos() {
         if (hunter != null) {
-            Handles.Label(transform.position + Vector3.up * verticalOffset, $"{hunter.name} : {hunter.CurrentState}");
+            Handles.Label(transform.position + Vector3.up * verticalOffset, $"{hunter.name} : {hunter.CurrentState} \n Fear {hunter.CurrentFear} / {hunter.MaxFear}");
         }     
     }
 }

@@ -23,8 +23,9 @@ public class HunterLogic : MonoBehaviour
     [SerializeField] private HunterLogic leader = null;
 
     [Header("Fear")]
-    [SerializeField] private int maxFear = 100;
-    [SerializeField] private int currentFear = 0;
+    [SerializeField] private float maxFear = 100;
+    [SerializeField] private float currentFear = 0;
+    [SerializeField] private Spook spook = null;
 
     [Header("References")]
     [SerializeField] private HunterMovement movement = null;
@@ -34,11 +35,19 @@ public class HunterLogic : MonoBehaviour
     private Breaker breaker = null;
 
     public HunterState CurrentState { get { return currentState; } }
+    public float MaxFear { get { return maxFear; } }
+    public float CurrentFear { get { return currentFear; } }
     public Room AssignedRoom { get { return assignedRoom; } }
 
     public void SetDirector(HunterDirector director)
     {
         this.director = director;
+    }
+
+    public void Spook(Spook spook)
+    {
+        this.spook = spook;
+        currentFear = Mathf.Min(maxFear, currentFear + spook.ScaryPoints);
     }
 
     private void Awake()
@@ -56,15 +65,15 @@ public class HunterLogic : MonoBehaviour
                 break;
 
             case HunterState.Exploring:
-                Explore();
+                Exploring();
                 break;
 
             case HunterState.Escort:
                 Escorting();
                 break;
 
-            case HunterState.Investigating:
-                Investigating();
+            case HunterState.InvestigatingRoom:
+                InvestigatingRoom();
                 break;
 
             case HunterState.ExaminingClue:
@@ -78,6 +87,10 @@ public class HunterLogic : MonoBehaviour
             case HunterState.Meeting:
                 Meeting();
                 break;
+
+            case HunterState.InvestigatingSpook:
+                InvestigatingSpook();
+                break;
         }
 
         PostUpdateCheck();
@@ -85,7 +98,7 @@ public class HunterLogic : MonoBehaviour
 
     private void Idling()
     {
-        if (director.Directive == HuntDirective.Meet) 
+        if (director.Directive == HuntDirective.Meet)
         {
             return;
         }
@@ -104,7 +117,7 @@ public class HunterLogic : MonoBehaviour
         }
     }
 
-    private void Explore()
+    private void Exploring()
     {
         // In room.
         if (assignedRoom.IsInRoom(this.transform))
@@ -152,7 +165,7 @@ public class HunterLogic : MonoBehaviour
 
     }
 
-    private void Investigating()
+    private void InvestigatingRoom()
     {
         if (assignedRoom == null) { return; }
 
@@ -186,7 +199,6 @@ public class HunterLogic : MonoBehaviour
         }
 
         // Investigate container.
-
         bool withinRadius = Vector3.Distance(transform.position, assignedContainer.transform.position) < assignedContainer.InvestigateRadius;
 
         if (withinRadius)
@@ -211,7 +223,8 @@ public class HunterLogic : MonoBehaviour
 
     private void ExaminingClue()
     {
-        if (examinedClue == null) {
+        if (examinedClue == null)
+        {
             return;
         }
 
@@ -226,10 +239,30 @@ public class HunterLogic : MonoBehaviour
 
     private void Meeting()
     {
-        if (!director.MeetingRoom.IsInRoom(transform)) 
+        if (!director.MeetingRoom.IsInRoom(transform))
         {
             movement.GoToTargetPos(director.MeetingRoom.GetDestinationPos());
             return;
+        }
+    }
+
+    private void InvestigatingSpook()
+    {
+        if (spook == null) { return; }
+
+        if (spook.IsInvestigated)
+        {
+            spook = null;
+            return;
+        }
+
+        if (Vector3.Distance(spook.transform.position, this.transform.position) < spook.InvestigateRadius)
+        {
+            spook.Investigate();
+        }
+        else
+        {
+            movement.GoToTargetPos(spook.transform.position);
         }
     }
 
@@ -240,12 +273,19 @@ public class HunterLogic : MonoBehaviour
     // Handle state transitions.
     private void PostUpdateCheck()
     {
+        if (spook != null && currentState != HunterState.InvestigatingSpook)
+        {
+            EnterState(HunterState.InvestigatingSpook);
+            return;
+        }
+
         if (currentState == HunterState.Begin)
         {
             EnterState(HunterState.Idling);
         }
         else if (currentState == HunterState.Idling)
         {
+
             if (director.Directive == HuntDirective.Meet)
             {
                 EnterState(HunterState.Meeting);
@@ -258,11 +298,11 @@ public class HunterLogic : MonoBehaviour
             // Investigate container.
             else if (assignedContainer != null)
             {
-                EnterState(HunterState.Investigating);
+                EnterState(HunterState.InvestigatingRoom);
             }
             else if (assignedRoom != null)
             {
-                EnterState(assignedRoom.IsExplored ? HunterState.Investigating : HunterState.Exploring);
+                EnterState(assignedRoom.IsExplored ? HunterState.InvestigatingRoom : HunterState.Exploring);
             }
             else if (leader != null)
             {
@@ -278,7 +318,7 @@ public class HunterLogic : MonoBehaviour
             }
 
         }
-        else if (currentState == HunterState.Investigating)
+        else if (currentState == HunterState.InvestigatingRoom)
         {
 
             if (assignedRoom == null || assignedRoom.IsInvestigated)
@@ -296,7 +336,7 @@ public class HunterLogic : MonoBehaviour
 
             if (examinedClue == null)
             {
-                EnterState(HunterState.Investigating);
+                EnterState(HunterState.InvestigatingRoom);
             }
 
         }
@@ -311,7 +351,16 @@ public class HunterLogic : MonoBehaviour
         }
         else if (currentState == HunterState.Meeting)
         {
+
             if (director.Directive != HuntDirective.Meet)
+            {
+                EnterState(HunterState.Idling);
+            }
+
+        }
+        else if (currentState == HunterState.InvestigatingSpook)
+        {
+            if (spook == null || spook.IsInvestigated)
             {
                 EnterState(HunterState.Idling);
             }
@@ -327,7 +376,7 @@ public class HunterLogic : MonoBehaviour
             case HunterState.Exploring:
                 AbandonAssignedRoom();
                 break;
-            case HunterState.Investigating:
+            case HunterState.InvestigatingRoom:
                 AbandonAssignedRoom();
                 break;
             case HunterState.ActivatingBreaker:
@@ -344,6 +393,7 @@ public class HunterLogic : MonoBehaviour
 
     private void EnterState(HunterState state)
     {
+
         if (currentState != state)
         {
             LeaveCurrentState();
@@ -385,7 +435,6 @@ public class HunterLogic : MonoBehaviour
 
     public void Init()
     {
-
     }
 
     private void LogAction(string str)
@@ -396,5 +445,5 @@ public class HunterLogic : MonoBehaviour
 
 public enum HunterState
 {
-    Begin, Idling, Escort, Exploring, ExaminingClue, Investigating, ActivatingBreaker, Meeting
+    Begin, Idling, Escort, Exploring, ExaminingClue, InvestigatingRoom, ActivatingBreaker, Meeting, InvestigatingSpook
 }
