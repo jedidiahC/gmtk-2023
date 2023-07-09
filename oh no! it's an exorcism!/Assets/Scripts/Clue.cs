@@ -5,12 +5,13 @@ using UnityEngine;
 
 public class Clue : MonoBehaviour
 {
-    [SerializeField] private string id = "Clue";
     [SerializeField] private float timeToExamineInSec = 50.0f;
     [SerializeField] private bool isExamined = false;
+    [SerializeField] private bool isRitualClue = false;
 
-    public string Id { get { return id; } }
+    public string Id { get { return gameObject.name; } }
     public float TimeToExamineInSec { get { return timeToExamineInSec; } }
+    public bool IsRitualClue { get { return isRitualClue; } }
 
     public bool Examine(float timeSpentExamining)
     {

@@ -74,6 +74,10 @@ public class HunterLogic : MonoBehaviour
             case HunterState.ActivatingBreaker:
                 ActivatingBreaker();
                 break;
+
+            case HunterState.Meeting:
+                Meeting();
+                break;
         }
 
         PostUpdateCheck();
@@ -81,6 +85,11 @@ public class HunterLogic : MonoBehaviour
 
     private void Idling()
     {
+        if (director.Directive == HuntDirective.Meet) 
+        {
+            return;
+        }
+
         // Check for rooms to explore.
         assignedRoom = director.AssignNextRoomToExplore();
 
@@ -93,7 +102,6 @@ public class HunterLogic : MonoBehaviour
         {
             leader = director.FindHunterInState(HunterState.Exploring);
         }
-
     }
 
     private void Explore()
@@ -112,17 +120,16 @@ public class HunterLogic : MonoBehaviour
                 }
 
                 assignedRoom.MarkExplored();
+                director.ReportExploredRoom(assignedRoom);
 
-                director.QueueRoomToInvestigate(assignedRoom);
-
-                assignedRoom = null;
+                AbandonAssignedRoom();
             }
         }
         else
         {
             if (assignedRoom.IsExplored)
             {
-                assignedRoom = null;
+                AbandonAssignedRoom();
             }
             else
             {
@@ -149,13 +156,12 @@ public class HunterLogic : MonoBehaviour
     {
         if (assignedRoom == null) { return; }
 
-
         // Not in room.
         if (!assignedRoom.IsInRoom(this.transform))
         {
             if (assignedRoom.IsInvestigated)
             {
-                assignedRoom = null;
+                AbandonAssignedRoom();
             }
             else
             {
@@ -165,17 +171,21 @@ public class HunterLogic : MonoBehaviour
             return;
         }
 
-        if (assignedContainer == null)
+        // Get container.
+        if (assignedContainer == null || assignedContainer.IsInvestigated)
         {
             assignedContainer = assignedRoom.GetRandomClueContainer();
 
             if (assignedContainer == null)
             {
                 assignedRoom.MarkInvestigated();
+                AbandonAssignedRoom();
             }
 
             return;
         }
+
+        // Investigate container.
 
         bool withinRadius = Vector3.Distance(transform.position, assignedContainer.transform.position) < assignedContainer.InvestigateRadius;
 
@@ -184,7 +194,11 @@ public class HunterLogic : MonoBehaviour
             movement.Stop();
             examinedClue = assignedContainer.TakeClue();
 
-            if (examinedClue == null)
+            if (examinedClue != null)
+            {
+                LogAction($"took {examinedClue.Id}");
+            }
+            else
             {
                 assignedContainer = null;
             }
@@ -197,14 +211,25 @@ public class HunterLogic : MonoBehaviour
 
     private void ExaminingClue()
     {
-        if (examinedClue != null)
+        if (examinedClue == null) {
+            return;
+        }
+
+        bool examined = examinedClue.Examine(Time.deltaTime);
+        if (examined)
         {
-            bool examined = examinedClue.Examine(Time.deltaTime);
-            if (examined)
-            {
-                Debug.Log($"{this.gameObject.name} examined {examinedClue.Id}.");
-                examinedClue = null;
-            }
+            director.SubmitClue(this, examinedClue);
+            LogAction($"submitted {examinedClue.Id}.");
+            examinedClue = null;
+        }
+    }
+
+    private void Meeting()
+    {
+        if (!director.MeetingRoom.IsInRoom(transform)) 
+        {
+            movement.GoToTargetPos(director.MeetingRoom.GetDestinationPos());
+            return;
         }
     }
 
@@ -217,16 +242,23 @@ public class HunterLogic : MonoBehaviour
     {
         if (currentState == HunterState.Begin)
         {
-
             EnterState(HunterState.Idling);
-
         }
         else if (currentState == HunterState.Idling)
         {
-
-            if (examinedClue != null)
+            if (director.Directive == HuntDirective.Meet)
+            {
+                EnterState(HunterState.Meeting);
+            }
+            // Has clue to examine.
+            else if (examinedClue != null)
             {
                 EnterState(HunterState.ExaminingClue);
+            }
+            // Investigate container.
+            else if (assignedContainer != null)
+            {
+                EnterState(HunterState.Investigating);
             }
             else if (assignedRoom != null)
             {
@@ -257,13 +289,16 @@ public class HunterLogic : MonoBehaviour
             {
                 EnterState(HunterState.ExaminingClue);
             }
+
         }
         else if (currentState == HunterState.ExaminingClue)
         {
-            if (examinedClue == null) 
+
+            if (examinedClue == null)
             {
                 EnterState(HunterState.Investigating);
             }
+
         }
         else if (currentState == HunterState.Escort)
         {
@@ -274,17 +309,26 @@ public class HunterLogic : MonoBehaviour
             }
 
         }
+        else if (currentState == HunterState.Meeting)
+        {
+            if (director.Directive != HuntDirective.Meet)
+            {
+                EnterState(HunterState.Idling);
+            }
+        }
     }
 
     private void LeaveCurrentState()
     {
         switch (currentState)
         {
+            case HunterState.Idling:
+                break;
             case HunterState.Exploring:
-                assignedRoom = null;
+                AbandonAssignedRoom();
                 break;
             case HunterState.Investigating:
-                assignedRoom = null;
+                AbandonAssignedRoom();
                 break;
             case HunterState.ActivatingBreaker:
                 breaker = null;
@@ -321,12 +365,22 @@ public class HunterLogic : MonoBehaviour
         LogAction($"started {state}");
     }
 
-    private void AbandonCurrentRoom()
+    private void AbandonAssignedRoom()
     {
         if (assignedRoom != null)
         {
-            director.QueueRoomToExplore(assignedRoom);
+            if (!assignedRoom.IsExplored)
+            {
+                director.QueueRoomToExplore(assignedRoom);
+            }
+            else if (!assignedRoom.IsInvestigated)
+            {
+                director.QueueRoomToInvestigate(assignedRoom);
+            }
         }
+
+        assignedRoom = null;
+        assignedContainer = null;
     }
 
     public void Init()
@@ -342,5 +396,5 @@ public class HunterLogic : MonoBehaviour
 
 public enum HunterState
 {
-    Begin, Idling, Escort, Exploring, ExaminingClue, Investigating, ActivatingBreaker
+    Begin, Idling, Escort, Exploring, ExaminingClue, Investigating, ActivatingBreaker, Meeting
 }

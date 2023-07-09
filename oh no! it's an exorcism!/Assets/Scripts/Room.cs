@@ -40,6 +40,7 @@ public class Room : MonoBehaviour
 
         SetupBidirectionalEdges();
 
+        clueContainers.AddRange(GetComponentsInChildren<ClueContainer>());
         uninvestigatedClueContainers.AddRange(clueContainers);
         investigatedClueContainers = new List<ClueContainer>();
     }
