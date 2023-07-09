@@ -11,6 +11,9 @@ public class HunterLogic : MonoBehaviour
     [SerializeField] private List<Trap> traps = null;
     [SerializeField] private Room assignedRoom = null;
 
+    [SerializeField] private Breaker assignedBreaker = null;
+    [SerializeField] private Room breakerRoom = null;
+
     [Header("Exploration")]
     [SerializeField] private float exploreTime = 5.0f;
     [SerializeField] private float exploreTimer = 0.0f;
@@ -50,6 +53,11 @@ public class HunterLogic : MonoBehaviour
         currentFear = Mathf.Min(maxFear, currentFear + spook.ScaryPoints);
     }
 
+    public void AssignBreakerRoom(Room breakerRoom)
+    {
+        this.breakerRoom = breakerRoom;
+    }
+
     private void Awake()
     {
         Debug.Assert(movement != null, "movement is not assigned!");
@@ -81,7 +89,7 @@ public class HunterLogic : MonoBehaviour
                 break;
 
             case HunterState.ActivatingBreaker:
-                ActivatingBreaker();
+                ActivatingBreakers();
                 break;
 
             case HunterState.Meeting:
@@ -98,7 +106,7 @@ public class HunterLogic : MonoBehaviour
 
     private void Idling()
     {
-        if (director.Directive == HuntDirective.Meet)
+        if (director.Directive == HuntDirective.Meet || breakerRoom != null)
         {
             return;
         }
@@ -266,13 +274,61 @@ public class HunterLogic : MonoBehaviour
         }
     }
 
-    private void ActivatingBreaker()
+    private void ActivatingBreakers()
     {
+        if (breakerRoom == null) { return; }
+
+        // Not in room.
+        if (!breakerRoom.IsInRoom(this.transform))
+        {
+            movement.GoToTargetPos(breakerRoom.GetDestinationPos());
+            return;
+        }
+
+        // In room but no assigned breaker.
+        if (assignedBreaker == null)
+        {
+            foreach (var breaker in breakerRoom.Breakers) 
+            {
+                if (!breaker.IsActivated) 
+                {
+                    assignedBreaker = breaker;
+                }
+            }
+
+            if (assignedBreaker == null)
+            {
+                breakerRoom = null;
+            }
+
+            return;
+        }
+
+        if (Vector3.Distance(assignedBreaker.transform.position, transform.position) < assignedBreaker.ActivationRadius)
+        {
+            movement.GoToTargetPos(assignedBreaker.transform.position);
+        }
+        else 
+        {
+            bool activated = assignedBreaker.Activate();
+
+            if (activated)
+            {
+                assignedBreaker = null;
+            }
+        }
     }
 
     // Handle state transitions.
     private void PostUpdateCheck()
     {
+
+        if (currentFear == maxFear)
+        {
+            EnterState(HunterState.Shock);
+            return;
+        }
+
         if (spook != null && currentState != HunterState.InvestigatingSpook)
         {
             EnterState(HunterState.InvestigatingSpook);
@@ -308,7 +364,10 @@ public class HunterLogic : MonoBehaviour
             {
                 EnterState(HunterState.Escort);
             }
-
+            else if (breakerRoom != null)
+            {
+                EnterState(HunterState.ActivatingBreaker);
+            }
         }
         else if (currentState == HunterState.Exploring)
         {
@@ -365,6 +424,13 @@ public class HunterLogic : MonoBehaviour
                 EnterState(HunterState.Idling);
             }
         }
+        else if (currentState == HunterState.ActivatingBreaker)
+        {
+            if (breakerRoom == null)
+            {
+                EnterState(HunterState.Idling);
+            }
+        }
     }
 
     private void LeaveCurrentState()
@@ -381,6 +447,8 @@ public class HunterLogic : MonoBehaviour
                 break;
             case HunterState.ActivatingBreaker:
                 breaker = null;
+                breakerRoom = null;
+                director.InformBreakerActivationFailed();
                 break;
             case HunterState.Escort:
                 movement.Stop();
@@ -445,5 +513,5 @@ public class HunterLogic : MonoBehaviour
 
 public enum HunterState
 {
-    Begin, Idling, Escort, Exploring, ExaminingClue, InvestigatingRoom, ActivatingBreaker, Meeting, InvestigatingSpook
+    Begin, Idling, Escort, Exploring, ExaminingClue, InvestigatingRoom, ActivatingBreaker, Meeting, InvestigatingSpook, Jumpscare, Shock
 }
