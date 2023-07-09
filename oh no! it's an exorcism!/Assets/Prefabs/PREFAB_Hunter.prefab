@@ -57,13 +57,24 @@ MonoBehaviour:
       m_Calls: []
   traps: []
   assignedRoom: {fileID: 0}
+  assignedBreaker: {fileID: 0}
+  breakerRoom: {fileID: 0}
   exploreTime: 2
   exploreTimer: 0
   assignedContainer: {fileID: 0}
   examinedClue: {fileID: 0}
   leader: {fileID: 0}
+  viewRadius: 30
+  viewAngle: 45
+  maxJumpScareDist: 0.7
+  targetMask:
+    serializedVersion: 2
+    m_Bits: 64
   maxFear: 100
   currentFear: 0
+  fearRateWhileJumpscare: 2
+  jumpscareTime: 10
+  jumpscareTimer: 0
   spook: {fileID: 0}
   movement: {fileID: 1817186572426826924}
   currentState: 0
@@ -110,6 +121,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sr: {fileID: 6356161770038125547}
+  hunter: {fileID: 2391160415133577427}
 --- !u!195 &2391837566305649751
 NavMeshAgent:
   m_ObjectHideFlags: 0

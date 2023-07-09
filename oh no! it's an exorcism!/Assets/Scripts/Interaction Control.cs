@@ -15,6 +15,7 @@ public class InteractionControl : MonoBehaviour
             float distance = Vector3.Distance(i.transform.position, this.transform.position);
             bool canInteract = distance < interactableRange;
             i.ShowInteractMessage(canInteract);
+            
             if (Input.GetKeyDown(KeyCode.E))
             {
                 i.Interact();

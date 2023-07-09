@@ -8,6 +8,7 @@ using UnityEngine.PlayerLoop;
 public class HunterRender : MonoBehaviour
 {
     [SerializeField] SpriteRenderer sr;
+    [SerializeField] HunterLogic hunter;
     private NavMeshAgent agent;
     private Animator animator;
 
@@ -23,5 +24,6 @@ public class HunterRender : MonoBehaviour
 
         sr.flipX = vel.x < 0;
         animator.SetFloat("speed", vel.magnitude);
+        animator.SetBool("jumpscare", hunter.CurrentState == HunterState.Jumpscare);
     }
 }

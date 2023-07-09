@@ -14,9 +14,10 @@ public class PlayerMovement : MonoBehaviour
   bool isDashing;
   float dashTimer;
   public float dashDuration = 0.25f;
+    public bool isVisible = false;
 
-  // Start is called before the first frame update
-  void Start()
+    // Start is called before the first frame update
+    void Start()
   {
     spriteRenderer = GetComponent<SpriteRenderer>();
     initialScale = transform.localScale;
@@ -29,6 +30,8 @@ public class PlayerMovement : MonoBehaviour
     {
       useMouseForMovement = !useMouseForMovement;
     }
+
+    isVisible = (Input.GetKey(KeyCode.Space));
 
     if (isDashing)
     {
