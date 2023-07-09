@@ -12,6 +12,12 @@ public class Ritual : MonoBehaviour
     [SerializeField] List<Clue> remainingRitualClues;
     [SerializeField] List<Clue> cluesExamined;
 
+    public int NumClues { get { return allClues.Count; } }
+    public int NumRitualClues { get { return ritualClues.Count; } }
+    public int NumCluesExamined { get { return cluesExamined.Count; } }
+    public int NumCluesRemaining { get { return NumClues - NumCluesExamined; } }
+    public int NumRitualCluesRemaining { get { return remainingRitualClues.Count; } }
+
     private void Awake() 
     {
         allClues.AddRange(GetComponentsInChildren<Clue>());

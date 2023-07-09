@@ -492,8 +492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isExplored: 0
   isInvestigated: 0
-  clueContainers:
-  - {fileID: 1832308848}
+  clueContainers: []
   adjacentRooms:
   - {fileID: 1537473471}
   destination: {fileID: 0}
@@ -3163,6 +3162,16 @@ MonoBehaviour:
   - {fileID: 2078827701}
   - {fileID: 975137665}
   breaker: []
+  minCluesBeforeMeet: 1
+  maxCluesBeforeMeet: 1
+  minMeetingTime: 2
+  maxMeetingTime: 5
+  roomsExplored: []
+  breakerRoomsExplored: []
+  currentDirective: 0
+  meetingRoom: {fileID: 0}
+  cluesBeforeNextMeet: 4
+  meetingTimeRequired: 0
 --- !u!4 &1125067950
 Transform:
   m_ObjectHideFlags: 0
@@ -6676,6 +6685,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1832308843}
     m_Modifications:
+    - target: {fileID: 4996957634624016885, guid: 0064fb873aaa9024a90b1fcad87e9624, type: 3}
+      propertyPath: isRitualClue
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4996957634624016885, guid: 0064fb873aaa9024a90b1fcad87e9624, type: 3}
       propertyPath: timeToExamineInSec
       value: 10
