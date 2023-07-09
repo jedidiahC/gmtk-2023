@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Events;
 
 public class HunterLogic : MonoBehaviour
@@ -85,9 +86,14 @@ public class HunterLogic : MonoBehaviour
         {
             Transform target = director.player.transform;
             Vector3 dirToTarget = (target.position - transform.position).normalized;
+            Vector3 forward = GetComponent<NavMeshAgent>().desiredVelocity.normalized;
 
+            forward.z = 0;
+            dirToTarget.z = 0;
 
-            if (Vector3.Angle(transform.forward, dirToTarget) < viewAngle / 2)
+            float angle = Vector3.Angle(forward, dirToTarget);
+
+            if (angle < viewAngle / 2)
             {
                 if (Vector3.Distance(transform.position, target.position) < maxJumpScareDist && director.player.isVisible)
                 {
@@ -97,7 +103,6 @@ public class HunterLogic : MonoBehaviour
                 }
             }
         }
-        
 
         switch (currentState)
         {
@@ -561,6 +566,13 @@ public class HunterLogic : MonoBehaviour
         assignedRoom = null;
         assignedContainer = null;
     }
+
+	public Vector3 DirFromAngle(float angleInDegrees, bool angleIsGlobal) {
+		if (!angleIsGlobal) {
+			angleInDegrees += transform.eulerAngles.y;
+		}
+		return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad),Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
+	}
 
     public void Init()
     {
