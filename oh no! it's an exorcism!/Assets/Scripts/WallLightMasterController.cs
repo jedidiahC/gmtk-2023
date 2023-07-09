@@ -5,7 +5,7 @@ using UnityEngine;
 public class WallLightMasterController : MonoBehaviour
 {
   public WallLight[] wallLights;
-  float countdown = 0.2f;
+  float countdown = 0.05f;
   int index;
 
   void Start()
@@ -21,7 +21,7 @@ public class WallLightMasterController : MonoBehaviour
       if (countdown < 0.0f)
       {
         --index;
-        countdown += Random.Range(0.2f, 0.3f);
+        countdown += Random.Range(0.0f, 0.05f);
       }
 
       wallLights[index].ToggleLights(false);
