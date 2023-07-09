@@ -6,28 +6,35 @@ using UnityEngine;
 public class HunterDirector : MonoBehaviour
 {
     [SerializeField] private Level level = null;
+    [SerializeField] private Ritual ritual = null;
     [SerializeField] private List<HunterLogic> hunters = null;
     [SerializeField] private List<Breaker> breaker = null;
 
     [SerializeField] private Queue<Room> roomsToExplore = new Queue<Room>();
+    [SerializeField] private Queue<Room> roomsToInvestigate = new Queue<Room>();
 
-    private void Awake() 
+    private void Awake()
     {
-        Debug.Assert(level != null, "level is not assigned!");     
+        Debug.Assert(level != null, "level is not assigned!");
+        Debug.Assert(ritual != null, "ritual is not assigned!");
     }
 
-    private void Start() 
+    private void Start()
     {
-        foreach (var hunter in hunters) {
+        foreach (var hunter in hunters)
+        {
             hunter.SetDirector(this);
         }
 
-        QueueRoom(level.StartingRoom);
+        QueueRoomToExplore(level.StartingRoom);
     }
 
-    public HunterLogic FindHunterInState(HunterState state) {
-        foreach (var hunter in hunters) {
-            if (hunter.CurrentState == state) {
+    public HunterLogic FindHunterInState(HunterState state)
+    {
+        foreach (var hunter in hunters)
+        {
+            if (hunter.CurrentState == state)
+            {
                 return hunter;
             }
         }
@@ -35,15 +42,47 @@ public class HunterDirector : MonoBehaviour
         return null;
     }
 
-    public void QueueRoom(Room room) {
-        if (room != null && !room.IsExplored && !roomsToExplore.Contains(room)) {
+    public void QueueRoomToExplore(Room room)
+    {
+        if (room == null)
+        {
+            return;
+        }
+
+        if (!room.IsExplored && !roomsToExplore.Contains(room))
+        {
             roomsToExplore.Enqueue(room);
         }
     }
 
-    public Room AssignNextRoomToExplore() {
-        if (roomsToExplore.Count > 0) {
+    public void QueueRoomToInvestigate(Room room)
+    {
+        if (room == null)
+        {
+            return;
+        }
+
+        if (room != null && room.IsExplored && !room.IsInvestigated && !roomsToInvestigate.Contains(room))
+        {
+            roomsToInvestigate.Enqueue(room);
+        }
+    }
+
+    public Room AssignNextRoomToExplore()
+    {
+        if (roomsToExplore.Count > 0)
+        {
             return roomsToExplore.Dequeue();
+        }
+
+        return null;
+    }
+
+    public Room AssignNextRoomToInvestigate()
+    {
+        if (roomsToInvestigate.Count > 0)
+        {
+            return roomsToInvestigate.Dequeue();
         }
 
         return null;

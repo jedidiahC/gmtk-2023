@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 1817186572426826924}
   - component: {fileID: 2391837566305649751}
   - component: {fileID: 8055148971438791099}
+  - component: {fileID: -3087755778203061359}
   m_Layer: 0
   m_Name: PREFAB_Hunter
   m_TagString: Untagged
@@ -55,6 +56,7 @@ MonoBehaviour:
   assignedRoom: {fileID: 0}
   exploreTime: 2
   exploreTimer: 0
+  leader: {fileID: 0}
   maxFear: 100
   currentFear: 0
   movement: {fileID: 1817186572426826924}
@@ -163,3 +165,16 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &-3087755778203061359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1780975795935619802}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c7f4db162bab4443818dd13bed4b1dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  angularSpeed: 0

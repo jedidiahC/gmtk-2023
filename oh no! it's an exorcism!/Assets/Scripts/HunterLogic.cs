@@ -10,10 +10,14 @@ public class HunterLogic : MonoBehaviour
 
     [SerializeField] private List<Trap> traps = null;
     [SerializeField] private Room assignedRoom = null;
-    
+
     [Header("Exploration")]
     [SerializeField] private float exploreTime = 5.0f;
     [SerializeField] private float exploreTimer = 0.0f;
+
+    [Header("Clues")]
+    [SerializeField] private ClueContainer assignedContainer = null;
+    [SerializeField] private Clue examinedClue = null;
 
     [Header("Escort")]
     [SerializeField] private HunterLogic leader = null;
@@ -32,11 +36,12 @@ public class HunterLogic : MonoBehaviour
     public HunterState CurrentState { get { return currentState; } }
     public Room AssignedRoom { get { return assignedRoom; } }
 
-    public void SetDirector(HunterDirector director) {
+    public void SetDirector(HunterDirector director)
+    {
         this.director = director;
     }
 
-    private void Awake() 
+    private void Awake()
     {
         Debug.Assert(movement != null, "movement is not assigned!");
     }
@@ -44,7 +49,8 @@ public class HunterLogic : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        switch (currentState) {
+        switch (currentState)
+        {
             case HunterState.Idling:
                 Idling();
                 break;
@@ -54,11 +60,15 @@ public class HunterLogic : MonoBehaviour
                 break;
 
             case HunterState.Escort:
-                Escort();
+                Escorting();
                 break;
 
             case HunterState.Investigating:
-                Investigate();
+                Investigating();
+                break;
+
+            case HunterState.ExaminingClue:
+                ExaminingClue();
                 break;
 
             case HunterState.ActivatingBreaker:
@@ -73,92 +83,209 @@ public class HunterLogic : MonoBehaviour
     {
         // Check for rooms to explore.
         assignedRoom = director.AssignNextRoomToExplore();
-        if (assignedRoom != null) {
-            movement.GoToTargetPos(assignedRoom.GetDestinationPos());
+
+        if (assignedRoom == null)
+        {
+            assignedRoom = director.AssignNextRoomToInvestigate();
         }
 
-        LogHunter("is idling");
+        if (assignedRoom == null)
+        {
+            leader = director.FindHunterInState(HunterState.Exploring);
+        }
+
     }
 
-    private void Explore() 
+    private void Explore()
     {
         // In room.
-        if (assignedRoom.IsInRoom(this.transform)) {
+        if (assignedRoom.IsInRoom(this.transform))
+        {
             exploreTimer += Time.deltaTime;
 
-            if (exploreTimer >= exploreTime) {
-                foreach (var room in assignedRoom.AdjacentRooms) {
-                    director.QueueRoom(room);
+            // On explored.
+            if (exploreTimer >= exploreTime)
+            {
+                foreach (var room in assignedRoom.AdjacentRooms)
+                {
+                    director.QueueRoomToExplore(room);
                 }
 
                 assignedRoom.MarkExplored();
+
+                director.QueueRoomToInvestigate(assignedRoom);
+
                 assignedRoom = null;
             }
-        } else {
-            movement.GoToTargetPos(assignedRoom.GetDestinationPos());
+        }
+        else
+        {
+            if (assignedRoom.IsExplored)
+            {
+                assignedRoom = null;
+            }
+            else
+            {
+                movement.GoToTargetPos(assignedRoom.GetDestinationPos());
+            }
         }
 
-        LogHunter("is exploring");
     }
 
-    private void Escort() 
+    private void Escorting()
     {
-        if (leader != null) {
-            movement.GoToTarget(leader.transform);
-            if (leader.CurrentState != HunterState.Exploring) {
-                leader = null;
-            }
-        }        
-    }
+        if (leader == null) { return; }
 
-    private void Investigate() 
-    {
-        if (assignedRoom == null) {
-            EnterState(HunterState.Idling);
+        movement.GoToTargetPos(leader.transform.position);
+
+        if (leader.CurrentState != HunterState.Exploring)
+        {
+            leader = null;
         }
 
-        LogHunter("is investigating");
     }
 
-    private void ActivatingBreaker() 
+    private void Investigating()
     {
-        LogHunter("is activating breaker");
-    }
+        if (assignedRoom == null) { return; }
 
-    private void PostUpdateCheck() 
-    {
-        if (currentState == HunterState.Begin) {
-            EnterState(HunterState.Idling);
-        } else if (currentState == HunterState.Idling) {
-            if (assignedRoom != null) {
-                if (!assignedRoom.IsExplored) {
-                    EnterState(HunterState.Exploring);
-                } else {
-                    EnterState(HunterState.Investigating);
-                }
-            } else {
-                leader = director.FindHunterInState(HunterState.Exploring);
-                if (leader != null) {
-                    EnterState(HunterState.Escort);
-                }
+
+        // Not in room.
+        if (!assignedRoom.IsInRoom(this.transform))
+        {
+            if (assignedRoom.IsInvestigated)
+            {
+                assignedRoom = null;
             }
-        } else if (currentState == HunterState.Exploring) {
+            else
+            {
+                movement.GoToTargetPos(assignedRoom.GetDestinationPos());
+            }
 
-            if (assignedRoom == null) {
+            return;
+        }
+
+        if (assignedContainer == null)
+        {
+            assignedContainer = assignedRoom.GetRandomClueContainer();
+
+            if (assignedContainer == null)
+            {
+                assignedRoom.MarkInvestigated();
+            }
+
+            return;
+        }
+
+        bool withinRadius = Vector3.Distance(transform.position, assignedContainer.transform.position) < assignedContainer.InvestigateRadius;
+
+        if (withinRadius)
+        {
+            movement.Stop();
+            examinedClue = assignedContainer.TakeClue();
+
+            if (examinedClue == null)
+            {
+                assignedContainer = null;
+            }
+        }
+        else
+        {
+            movement.GoToTargetPos(assignedContainer.transform.position);
+        }
+    }
+
+    private void ExaminingClue()
+    {
+        if (examinedClue != null)
+        {
+            bool examined = examinedClue.Examine(Time.deltaTime);
+            if (examined)
+            {
+                Debug.Log($"{this.gameObject.name} examined {examinedClue.Id}.");
+                examinedClue = null;
+            }
+        }
+    }
+
+    private void ActivatingBreaker()
+    {
+    }
+
+    // Handle state transitions.
+    private void PostUpdateCheck()
+    {
+        if (currentState == HunterState.Begin)
+        {
+
+            EnterState(HunterState.Idling);
+
+        }
+        else if (currentState == HunterState.Idling)
+        {
+
+            if (examinedClue != null)
+            {
+                EnterState(HunterState.ExaminingClue);
+            }
+            else if (assignedRoom != null)
+            {
+                EnterState(assignedRoom.IsExplored ? HunterState.Investigating : HunterState.Exploring);
+            }
+            else if (leader != null)
+            {
+                EnterState(HunterState.Escort);
+            }
+
+        }
+        else if (currentState == HunterState.Exploring)
+        {
+            if (assignedRoom == null || assignedRoom.IsExplored)
+            {
                 EnterState(HunterState.Idling);
             }
 
-        } else if (currentState == HunterState.Escort) {
-            
-            if (leader == null) {
+        }
+        else if (currentState == HunterState.Investigating)
+        {
+
+            if (assignedRoom == null || assignedRoom.IsInvestigated)
+            {
                 EnterState(HunterState.Idling);
             }
+            else if (examinedClue != null)
+            {
+                EnterState(HunterState.ExaminingClue);
+            }
+        }
+        else if (currentState == HunterState.ExaminingClue)
+        {
+            if (examinedClue == null) 
+            {
+                EnterState(HunterState.Investigating);
+            }
+        }
+        else if (currentState == HunterState.Escort)
+        {
+
+            if (leader == null)
+            {
+                EnterState(HunterState.Idling);
+            }
+
         }
     }
 
     private void LeaveCurrentState()
     {
-        switch(currentState) {
+        switch (currentState)
+        {
+            case HunterState.Exploring:
+                assignedRoom = null;
+                break;
+            case HunterState.Investigating:
+                assignedRoom = null;
+                break;
             case HunterState.ActivatingBreaker:
                 breaker = null;
                 break;
@@ -168,12 +295,13 @@ public class HunterLogic : MonoBehaviour
                 break;
             default:
                 break;
-        } 
+        }
     }
 
-    private void EnterState(HunterState state) 
+    private void EnterState(HunterState state)
     {
-        if (currentState != state) {
+        if (currentState != state)
+        {
             LeaveCurrentState();
         }
 
@@ -190,20 +318,29 @@ public class HunterLogic : MonoBehaviour
 
         OnEnterState.Invoke(state);
 
-        LogHunter($"entering {state}");
+        LogAction($"started {state}");
     }
 
-    public void Init() 
+    private void AbandonCurrentRoom()
+    {
+        if (assignedRoom != null)
+        {
+            director.QueueRoomToExplore(assignedRoom);
+        }
+    }
+
+    public void Init()
     {
 
     }
 
-    private void LogHunter(string str) 
+    private void LogAction(string str)
     {
-        // Debug.Log($"{this.gameObject.name} {str}");
+        Debug.Log($"{this.gameObject.name} {str}");
     }
 }
 
-public enum HunterState {
+public enum HunterState
+{
     Begin, Idling, Escort, Exploring, ExaminingClue, Investigating, ActivatingBreaker
 }
