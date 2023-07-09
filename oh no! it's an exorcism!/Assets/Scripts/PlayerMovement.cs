@@ -17,8 +17,10 @@ public class PlayerMovement : MonoBehaviour
   [SerializeField] AudioSource audioSource;
   [SerializeField] AudioClip whooshSound;
 
-  // Start is called before the first frame update
-  void Start()
+    public bool isVisible;
+
+    // Start is called before the first frame update
+    void Start()
   {
     spriteRenderer = GetComponent<SpriteRenderer>();
     initialScale = transform.localScale;
@@ -32,7 +34,9 @@ public class PlayerMovement : MonoBehaviour
       useMouseForMovement = !useMouseForMovement;
     }
 
-    if (isDashing)
+        isVisible = Input.GetKey(KeyCode.Space);
+
+        if (isDashing)
     {
       if (dashTimer < 0.0f)
       {
