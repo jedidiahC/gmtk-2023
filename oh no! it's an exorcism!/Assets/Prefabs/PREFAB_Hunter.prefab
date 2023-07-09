@@ -70,7 +70,7 @@ MonoBehaviour:
   leader: {fileID: 0}
   viewRadius: 30
   viewAngle: 45
-  maxJumpScareDist: 0.7
+  maxJumpScareDist: 2
   targetMask:
     serializedVersion: 2
     m_Bits: 64
