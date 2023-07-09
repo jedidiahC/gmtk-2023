@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Spook : MonoBehaviour
+public class Spook : Interactable
 {
     [SerializeField] private List<HunterLogic> huntersWithinRange;
     [SerializeField] private float investigateRadius;
     [SerializeField] private float scaryPoints;
+    [SerializeField] private GameObject interactMessage = null;
 
     private bool isInvestigated = false;
 
@@ -21,11 +22,21 @@ public class Spook : MonoBehaviour
     }
 
     [ContextMenu("Activate")]
-    public void Activate()
+    public override void Interact()
     {
+        base.Interact();
+
         foreach (var h in huntersWithinRange) 
         {
             h.Spook(this);
+        }
+    }
+
+    public override void ShowInteractMessage(bool isShown)
+    {
+        if (interactMessage != null)
+        {
+            interactMessage.SetActive(isShown);
         }
     }
 
