@@ -13,6 +13,7 @@ public class ClueContainer : MonoBehaviour
     [SerializeField] private bool isInvestigated = false;
 
     public float InvestigateRadius { get { return investigateRadius; } }
+    public bool IsInvestigated { get { return isInvestigated; } }
 
     public Clue TakeClue()
     {
@@ -21,20 +22,24 @@ public class ClueContainer : MonoBehaviour
             return null;
         }
 
-        if (clues.Count == 0) 
+        Clue c = clues[Random.Range(0, clues.Count)];
+        clues.Remove(c);
+
+        if (clues.Count == 0)
         {
             isInvestigated = true;
             onInvestigate.Invoke(this);
-            return null;
         }
-
-        Clue c = clues[Random.Range(0, clues.Count)];
-        clues.Remove(c);
 
         return c;
     }
 
-    private void OnDrawGizmos() 
+    private void Start() 
+    {
+        clues.AddRange(GetComponentsInChildren<Clue>());
+    }
+
+    private void OnDrawGizmos()
     {
         Color color = isInvestigated ? Color.green : Color.yellow;
         color.a = 0.4f;

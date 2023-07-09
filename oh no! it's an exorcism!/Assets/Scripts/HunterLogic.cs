@@ -113,16 +113,14 @@ public class HunterLogic : MonoBehaviour
 
                 assignedRoom.MarkExplored();
 
-                director.QueueRoomToInvestigate(assignedRoom);
-
-                assignedRoom = null;
+                AbandonAssignedRoom();
             }
         }
         else
         {
             if (assignedRoom.IsExplored)
             {
-                assignedRoom = null;
+                AbandonAssignedRoom();
             }
             else
             {
@@ -149,13 +147,12 @@ public class HunterLogic : MonoBehaviour
     {
         if (assignedRoom == null) { return; }
 
-
         // Not in room.
         if (!assignedRoom.IsInRoom(this.transform))
         {
             if (assignedRoom.IsInvestigated)
             {
-                assignedRoom = null;
+                AbandonAssignedRoom();
             }
             else
             {
@@ -165,17 +162,21 @@ public class HunterLogic : MonoBehaviour
             return;
         }
 
-        if (assignedContainer == null)
+        // Get container.
+        if (assignedContainer == null || assignedContainer.IsInvestigated)
         {
             assignedContainer = assignedRoom.GetRandomClueContainer();
 
             if (assignedContainer == null)
             {
                 assignedRoom.MarkInvestigated();
+                AbandonAssignedRoom();
             }
 
             return;
         }
+
+        // Investigate container.
 
         bool withinRadius = Vector3.Distance(transform.position, assignedContainer.transform.position) < assignedContainer.InvestigateRadius;
 
@@ -184,7 +185,11 @@ public class HunterLogic : MonoBehaviour
             movement.Stop();
             examinedClue = assignedContainer.TakeClue();
 
-            if (examinedClue == null)
+            if (examinedClue != null)
+            {
+                LogAction($"took {examinedClue.Id}");
+            }
+            else
             {
                 assignedContainer = null;
             }
@@ -202,7 +207,8 @@ public class HunterLogic : MonoBehaviour
             bool examined = examinedClue.Examine(Time.deltaTime);
             if (examined)
             {
-                Debug.Log($"{this.gameObject.name} examined {examinedClue.Id}.");
+                director.SubmitClue(this, examinedClue);
+                LogAction($"submitted {examinedClue.Id}.");
                 examinedClue = null;
             }
         }
@@ -227,6 +233,10 @@ public class HunterLogic : MonoBehaviour
             if (examinedClue != null)
             {
                 EnterState(HunterState.ExaminingClue);
+            }
+            else if (assignedContainer != null)
+            {
+                EnterState(HunterState.Investigating);
             }
             else if (assignedRoom != null)
             {
@@ -260,7 +270,7 @@ public class HunterLogic : MonoBehaviour
         }
         else if (currentState == HunterState.ExaminingClue)
         {
-            if (examinedClue == null) 
+            if (examinedClue == null)
             {
                 EnterState(HunterState.Investigating);
             }
@@ -281,10 +291,10 @@ public class HunterLogic : MonoBehaviour
         switch (currentState)
         {
             case HunterState.Exploring:
-                assignedRoom = null;
+                AbandonAssignedRoom();
                 break;
             case HunterState.Investigating:
-                assignedRoom = null;
+                AbandonAssignedRoom();
                 break;
             case HunterState.ActivatingBreaker:
                 breaker = null;
@@ -321,12 +331,22 @@ public class HunterLogic : MonoBehaviour
         LogAction($"started {state}");
     }
 
-    private void AbandonCurrentRoom()
+    private void AbandonAssignedRoom()
     {
         if (assignedRoom != null)
         {
-            director.QueueRoomToExplore(assignedRoom);
+            if (!assignedRoom.IsExplored)
+            {
+                director.QueueRoomToExplore(assignedRoom);
+            }
+            else if (!assignedRoom.IsInvestigated)
+            {
+                director.QueueRoomToInvestigate(assignedRoom);
+            }
         }
+
+        assignedRoom = null;
+        assignedContainer = null;
     }
 
     public void Init()

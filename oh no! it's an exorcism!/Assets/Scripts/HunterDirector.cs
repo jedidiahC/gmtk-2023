@@ -87,4 +87,9 @@ public class HunterDirector : MonoBehaviour
 
         return null;
     }
+
+    public void SubmitClue(HunterLogic hunter, Clue clue)
+    {
+        ritual.SubmitClue(hunter, clue);
+    }
 }
