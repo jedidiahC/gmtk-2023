@@ -14,6 +14,8 @@ public class PlayerMovement : MonoBehaviour
   bool isDashing;
   float dashTimer;
   public float dashDuration = 0.25f;
+  [SerializeField] AudioSource audioSource;
+  [SerializeField] AudioClip whooshSound;
 
   // Start is called before the first frame update
   void Start()
@@ -41,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
     else if (Input.GetKeyDown(KeyCode.LeftShift))
     {
       isDashing = true;
+      audioSource.PlayOneShot(whooshSound);
       dashTimer += dashDuration;
     }
 

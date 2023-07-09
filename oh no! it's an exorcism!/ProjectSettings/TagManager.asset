@@ -47,3 +47,6 @@ TagManager:
   - name: Wall Tops
     uniqueID: 2984613181
     locked: 0
+  - name: Canvas
+    uniqueID: 1250379717
+    locked: 0
