@@ -26,6 +26,9 @@ public class HunterDirector : MonoBehaviour
     [SerializeField] private int cluesBeforeNextMeet = 0;
     [SerializeField] private float meetingTimeRequired = 0;
 
+    [SerializeField] private Room assignedBreakerRoom = null;
+    [SerializeField] private HunterLogic assignedHunterToBreakerRoom = null;
+
     public HuntDirective Directive { get { return currentDirective; }}
     public Room MeetingRoom { get { return meetingRoom; } }
 
@@ -47,6 +50,19 @@ public class HunterDirector : MonoBehaviour
         cluesBeforeNextMeet = Random.Range(minCluesBeforeMeet, maxCluesBeforeMeet);
     }
 
+    private HunterLogic GetLeastScaredHunter()
+    {
+        HunterLogic hunter = null;
+        foreach (var h in hunters)
+        {
+            if ((hunter == null || h.CurrentFear < hunter.CurrentFear) && h.CurrentState != HunterState.Shock) 
+            {
+                hunter = h;
+            }
+        }
+        return hunter;
+    }
+
     public HunterLogic FindHunterInState(HunterState state)
     {
         foreach (var hunter in hunters)
@@ -58,6 +74,11 @@ public class HunterDirector : MonoBehaviour
         }
 
         return null;
+    }
+
+    public void InformBreakerActivationFailed()
+    {
+        assignedHunterToBreakerRoom = null;
     }
 
     public void QueueRoomToExplore(Room room)
@@ -93,6 +114,11 @@ public class HunterDirector : MonoBehaviour
         if (!roomsExplored.Contains(room))
         {
             roomsExplored.Add(room);
+
+            if (room.HasBreaker)
+            {
+                breakerRoomsExplored.Add(room);
+            }
         }
     }
 
@@ -160,7 +186,35 @@ public class HunterDirector : MonoBehaviour
                     currentDirective = HuntDirective.Normal;
                 }
             }
-        }    
+
+        } else if (currentDirective == HuntDirective.Normal)
+        {
+            if (assignedBreakerRoom == null && breakerRoomsExplored.Count > 0)
+            {
+                Room breakerRoom = breakerRoomsExplored[0];
+
+                bool allBreakersActivated = true;
+                foreach (Breaker breaker in breakerRoom.Breakers)
+                {
+                    if (!breaker.IsActivated)
+                    {
+                        allBreakersActivated = false;
+                        assignedBreakerRoom = breakerRoom;
+                        break;
+                    }
+                }
+
+                if (!allBreakersActivated && assignedHunterToBreakerRoom == null)
+                {
+                    HunterLogic chosenOne = GetLeastScaredHunter();
+                    if (chosenOne != null)
+                    {
+                        chosenOne.AssignBreakerRoom(assignedBreakerRoom);
+                        assignedHunterToBreakerRoom = chosenOne;
+                    }
+                }
+            }
+        } 
     }
 }
 
