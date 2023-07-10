@@ -17,13 +17,15 @@ public class PlayerMovement : MonoBehaviour
   [SerializeField] AudioSource audioSource;
   [SerializeField] AudioClip whooshSound;
 
-    public bool isVisible;
+  public bool isVisible;
+  bool canMove = true;
 
-    // Start is called before the first frame update
-    void Start()
+  // Start is called before the first frame update
+  void Start()
   {
     spriteRenderer = GetComponent<SpriteRenderer>();
     initialScale = transform.localScale;
+    canMove = true;
   }
 
   // Update is called once per frame
@@ -34,9 +36,9 @@ public class PlayerMovement : MonoBehaviour
       useMouseForMovement = !useMouseForMovement;
     }
 
-        isVisible = Input.GetKey(KeyCode.Space);
+    isVisible = Input.GetKey(KeyCode.Space);
 
-        if (isDashing)
+    if (isDashing)
     {
       if (dashTimer < 0.0f)
       {
@@ -56,7 +58,7 @@ public class PlayerMovement : MonoBehaviour
       Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
       Vector2 transformPosition = transform.position;
       spriteRenderer.flipX = mousePosition.x > transformPosition.x;
-      if (Vector2.Distance(mousePosition, transformPosition) > 1.0f)
+      if (Vector2.Distance(mousePosition, transformPosition) > 1.0f && canMove)
       {
         movedThisFrame = true;
         transform.position = Vector2.MoveTowards(transform.position, mousePosition, (movementSpeed + (isDashing ? 10.0f : 0.0f)) * Time.deltaTime);
@@ -74,7 +76,7 @@ public class PlayerMovement : MonoBehaviour
         movedThisFrame = true;
       }
       spriteRenderer.flipX = axis.x > 0;
-      transform.position += axis * (movementSpeed + (isDashing ? 10.0f : 0.0f)) * Time.deltaTime;
+      if (canMove) transform.position += axis * (movementSpeed + (isDashing ? 10.0f : 0.0f)) * Time.deltaTime;
     }
 
     SquishSquash(movedThisFrame);
@@ -96,4 +98,14 @@ public class PlayerMovement : MonoBehaviour
     scale.y -= isDashing ? initialScale.y * 0.2f : 0.0f;
     transform.localScale = scale;
   }
+
+  // private void OnCollisionEnter2D(Collision2D other)
+  // {
+  //   if (other.gameObject.tag != "help")
+  //   {
+  //     return;
+  //   }
+
+  //   isDashing = false;
+  // }
 }

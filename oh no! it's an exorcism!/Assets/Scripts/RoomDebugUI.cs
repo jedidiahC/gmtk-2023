@@ -16,7 +16,7 @@ public class RoomDebugUI : MonoBehaviour
 
         Vector3 offset = Vector3.up * 0.0f;
 
-        Handles.Label(transform.position + offset, $"{room.name} : Explored ({room.IsExplored})\n | Investigated ({room.IsInvestigated})\n | Clue Containers Investigated ({room.InvestigatedClueContainers.Count} / {room.ClueContainers.Count})");
+        // Handles.Label(transform.position + offset, $"{room.name} : Explored ({room.IsExplored})\n | Investigated ({room.IsInvestigated})\n | Clue Containers Investigated ({room.InvestigatedClueContainers.Count} / {room.ClueContainers.Count})");
 
         if (room.AdjacentRooms == null)
         {
